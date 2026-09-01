@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>K2 Package &amp; Deployment — Troubleshooting</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14171f;
+    --ink-2:#1b1f29;
+    --ink-3:#232733;
+    --line: rgba(233,230,222,0.12);
+    --line-soft: rgba(233,230,222,0.07);
+    --paper:#e9e6de;
+    --paper-dim:#a7a49c;
+    --paper-dim-2:#7c7a75;
+
+    --c-install:#d6a24c;
+    --c-perf:#9c8fd6;
+    --c-smart:#4fb39b;
+    --c-package:#6e9bdb;
+    --c-deploy:#d67ca0;
+    --c-perm:#d6785a;
+    --c-ui:#4fadc4;
+    --c-sp:#b37ac2;
+  }
+
+  *{ box-sizing:border-box; }
+
+  html,body{
+    margin:0;
+    padding:0;
+    background:var(--ink);
+    color:var(--paper);
+    font-family:'Inter', sans-serif;
+  }
+
+  ::selection{ background: rgba(233,230,222,0.2); }
+
+  .wrap{
+    max-width:800px;
+    margin:0 auto;
+    padding: 72px 28px 140px;
+  }
+
+  header{
+    margin-bottom: 56px;
+  }
+
+  .kicker{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    letter-spacing:0.02em;
+    color: var(--paper-dim);
+    margin: 0 0 22px;
+  }
+
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size: 46px;
+    line-height:1.08;
+    letter-spacing:-0.01em;
+    margin: 0 0 18px;
+    max-width: 11ch;
+  }
+
+  header p.lede{
+    font-size:16.5px;
+    line-height:1.65;
+    color: var(--paper-dim);
+    max-width: 54ch;
+    margin: 0 0 30px;
+  }
+
+  .stat-row{
+    display:flex;
+    gap: 28px;
+    flex-wrap:wrap;
+    padding-top: 26px;
+    border-top: 1px solid var(--line);
+  }
+
+  .stat{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .stat b{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:22px;
+  }
+  .stat span{
+    font-size:12.5px;
+    color: var(--paper-dim-2);
+  }
+
+  .controls{
+    position:sticky;
+    top:0;
+    z-index: 5;
+    background: linear-gradient(var(--ink) 82%, transparent);
+    padding: 18px 0 22px;
+    margin-bottom: 8px;
+  }
+
+  .search{
+    position:relative;
+    margin-bottom: 14px;
+  }
+  .search input{
+    width:100%;
+    background: var(--ink-2);
+    border:1px solid var(--line);
+    border-radius: 8px;
+    color: var(--paper);
+    font-family:'Inter', sans-serif;
+    font-size:14.5px;
+    padding: 12px 14px 12px 38px;
+    outline:none;
+  }
+  .search input::placeholder{ color: var(--paper-dim-2); }
+  .search input:focus{ border-color: rgba(233,230,222,0.3); }
+  .search svg{
+    position:absolute;
+    left:12px;
+    top:50%;
+    transform:translateY(-50%);
+    opacity:0.5;
+  }
+
+  .chips{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .chip{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.01em;
+    padding: 6px 11px;
+    border-radius: 20px;
+    border:1px solid var(--line);
+    background: transparent;
+    color: var(--paper-dim);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:7px;
+    transition: border-color .15s ease, color .15s ease, background .15s ease;
+  }
+  .chip .dot{
+    width:6px; height:6px; border-radius:50%;
+    background: currentColor;
+    opacity: 0.9;
+  }
+  .chip:hover{ border-color: rgba(233,230,222,0.3); color: var(--paper); }
+  .chip.active{
+    color: var(--ink);
+    border-color: transparent;
+  }
+
+  .empty{
+    display:none;
+    padding: 40px 0;
+    color: var(--paper-dim-2);
+    font-size: 14.5px;
+    border-top: 1px solid var(--line);
+  }
+  .empty.show{ display:block; }
+
+  .list{
+    display:flex;
+    flex-direction:column;
+  }
+
+  .issue{
+    border-top: 1px solid var(--line);
+  }
+  .issue:last-child{ border-bottom: 1px solid var(--line); }
+
+  .issue-head{
+    width:100%;
+    background:none;
+    border:none;
+    text-align:left;
+    color: inherit;
+    font-family: inherit;
+    padding: 22px 4px;
+    display:flex;
+    align-items:flex-start;
+    gap: 16px;
+    cursor:pointer;
+  }
+
+  .issue-num{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    color: var(--paper-dim-2);
+    padding-top:4px;
+    width: 26px;
+    flex-shrink:0;
+  }
+
+  .issue-main{ flex:1; min-width:0; }
+
+  .issue-tag{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    letter-spacing:0.02em;
+    margin-bottom:9px;
+  }
+  .issue-tag .dot{ width:6px; height:6px; border-radius:50%; }
+
+  .issue-title{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size: 19px;
+    line-height:1.35;
+    margin:0;
+  }
+
+  .issue-chevron{
+    flex-shrink:0;
+    margin-top: 6px;
+    transition: transform .2s ease;
+    opacity:0.55;
+  }
+  .issue.open .issue-chevron{ transform: rotate(45deg); opacity:0.9; }
+
+  .issue-body{
+    display:grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows .28s ease;
+  }
+  .issue.open .issue-body{ grid-template-rows: 1fr; }
+  .issue-body-inner{ overflow:hidden; }
+
+  .issue-content{
+    padding: 0 4px 30px 42px;
+    display:flex;
+    flex-direction:column;
+    gap: 18px;
+  }
+
+  .block{
+    padding-left: 14px;
+    border-left: 2px solid var(--line);
+  }
+  .block.symptom{ border-color: var(--tag-color, var(--paper-dim-2)); }
+  .block.solution{ border-color: #6fbf9c; }
+
+  .block-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.03em;
+    color: var(--paper-dim-2);
+    margin: 0 0 6px;
+  }
+  .block.solution .block-label{ color:#6fbf9c; }
+
+  .block p{
+    margin:0;
+    font-size: 14.5px;
+    line-height:1.68;
+    color: var(--paper);
+  }
+  .block p + p{ margin-top: 10px; }
+
+  .block ol{
+    margin: 4px 0 0;
+    padding-left: 18px;
+    font-size: 14.5px;
+    line-height:1.7;
+    color: var(--paper);
+  }
+  .block ol li{ margin-bottom: 4px; }
+
+  footer{
+    margin-top: 60px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color: var(--paper-dim-2);
+  }
+
+  @media (max-width: 560px){
+    .wrap{ padding: 48px 18px 100px; }
+    h1{ font-size: 34px; }
+    .issue-content{ padding-left: 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="kicker">K2 Package &amp; Deployment · field notes</p>
+    <h1>When a deployment doesn't behave</h1>
+    <p class="lede">Thirteen recurring issues from packaging and deploying K2 solutions across environments, with the symptom, the cause, and the fix for each. Search by keyword or filter by category.</p>
+    <div class="stat-row">
+      <div class="stat"><b>13</b><span>issues logged</span></div>
+      <div class="stat"><b>8</b><span>categories</span></div>
+      <div class="stat"><b>1</b><span>source: K2 troubleshooting docs</span></div>
+    </div>
+  </header>
+
+  <div class="controls">
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="searchInput" type="text" placeholder="Search issues, e.g. &quot;SmartObject&quot; or &quot;permissions&quot;">
+    </div>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <p class="empty" id="emptyState">No issues match that search.</p>
+
+  <div class="list" id="list"></div>
+
+  <footer>Compiled from K2 Package and Deployment troubleshooting reference.</footer>
+</div>
+
+<script>
+const CATS = {
+  install:  { label: 'Installation', color: 'var(--c-install)' },
+  perf:     { label: 'Performance',  color: 'var(--c-perf)'    },
+  smart:    { label: 'SmartObjects', color: 'var(--c-smart)'   },
+  package:  { label: 'Packaging',    color: 'var(--c-package)' },
+  deploy:   { label: 'Deployment',   color: 'var(--c-deploy)'  },
+  perm:     { label: 'Permissions',  color: 'var(--c-perm)'    },
+  ui:       { label: 'Interface',    color: 'var(--c-ui)'      },
+  sp:       { label: 'SharePoint',   color: 'var(--c-sp)'      }
+};
+
+const ISSUES = [
+  {
+    cat: 'install',
+    title: 'Package and Deployment fails to install',
+    symptom: 'Setup encounters an error, or the install never completes, because a required piece of software is missing.',
+    solution: '<p>Package and Deployment depends on Microsoft Management Console (MMC) 3.0. Install it before retrying setup.</p>'
+  },
+  {
+    cat: 'perf',
+    title: 'Packaging or deployment runs slowly',
+    symptom: 'Packages with 800 or more artifacts take noticeably longer to build and deploy, and use more memory while doing it.',
+    solution: '<p>Large solutions need more hardware headroom to process. Three ways to bring the time back down:</p><ol><li>Trim the package — drop unneeded SmartObject data and split one large solution into several smaller packages.</li><li>Deploy packages one at a time instead of all at once.</li><li>Add CPU and RAM to the source and target environments.</li></ol>'
+  },
+  {
+    cat: 'smart',
+    title: 'SmartObject data is missing after deployment',
+    symptom: 'A package containing SmartObjects deploys, but the underlying data doesn\'t come with it.',
+    solution: '<p>SmartObject data isn\'t packaged by default. On each SmartBox SmartObject, open the Data tab and check the box to include its data — then, at deployment time, make sure the SmartObject Data item is checked too. Only SmartBox SmartObject data can be packaged this way; data in other, non-SmartBox SmartObjects can\'t.</p>'
+  },
+  {
+    cat: 'smart',
+    title: 'Some or all SmartObjects are missing from a package',
+    symptom: 'Deploying through the Package and Deployment console or the PowerShell snap-in throws an exception that the destination table can\'t be reached.',
+    solution: '<p>SmartObject system names can\'t contain spaces — the service uses underscores internally even when the display name has spaces. Renaming a system name to include spaces breaks deployment for that object.</p><p>Stick to underscores when renaming a SmartObject\'s system name.</p>'
+  },
+  {
+    cat: 'package',
+    title: 'A package doesn\'t behave as expected',
+    symptom: 'The deployed package doesn\'t respond the way it should, usually pointing to a dependency that was left out.',
+    solution: '<p>A few habits prevent this:</p><ol><li>Leave "Automatically include dependent items" checked when building a package — unchecking it means selecting every dependent node yourself.</li><li>For service instance artifacts, make sure the entities they depend on already exist on the target before deploying.</li><li>"Continue deploying packaged items if one or more items cannot be deployed" is on by default — turn it off if a single failure should stop the whole deployment so you can resolve it first.</li><li>If a conflict can\'t be resolved before deploying, uncheck that item, deploy the rest, and come back to deploy it separately before the solution goes live.</li></ol>'
+  },
+  {
+    cat: 'deploy',
+    title: 'Deployment fails after manually recreating artifacts mid-deployment',
+    symptom: 'Creating dependent artifacts on the target by hand during a deployment — especially reference-only items like SharePoint elements — causes the deployment to fail.',
+    solution: '<p>This typically happens after using Delete All to clear a partial deployment (say, only the SmartObjects of a SharePoint list exist, not the forms or views) and then trying to continue.</p><p>Avoid Delete All mid-deployment. Use the New menu to create only what\'s missing. If Delete All was already used, restart the deployment from scratch so mapping can be re-analyzed cleanly.</p>'
+  },
+  {
+    cat: 'deploy',
+    title: 'Oracle, SQL Server, CRM, or SharePoint service instances won\'t deploy',
+    symptom: 'These service instance types fail to deploy to the target environment.',
+    solution: '<p>Before deploying, confirm the matching databases, entities, lists, or libraries already exist on the target with the same schema as the source. For a SalesForce service instance specifically, an existing SalesForce service instance must already be on the target — rebind the packaged instance to it once deployed.</p>'
+  },
+  {
+    cat: 'perm',
+    title: 'Deployment permissions denied',
+    symptom: 'Certain artifacts or dependencies can\'t be deployed due to a lack of permissions.',
+    solution: '<p>Every call to the deployment server is validated, and SmartObject security requires \'Publish SmartObject\' rights on top of that.</p><p>You\'ll need K2 deployment (export) rights and membership in the Package and Deployment role. Note that this role grants global view rights but doesn\'t override any Deny rights already set on your identity.</p>'
+  },
+  {
+    cat: 'perm',
+    title: '"Insufficient rights detected. Unable to continue"',
+    symptom: 'This message appears when creating, editing, or deploying a package.',
+    solution: '<p>Creating or editing a package requires View rights across the entire category system — losing rights to even one artifact elsewhere blocks the whole operation. Deploying requires View rights to everything on the target, since Package and Deployment needs to tell whether an item already exists (update) or doesn\'t (create).</p><p>Grant View rights everywhere in the category system. The Package and Deployment role gives global view rights, but any Deny rights already in place still take precedence.</p>'
+  },
+  {
+    cat: 'package',
+    title: 'An artifact type can\'t be included in a package',
+    symptom: 'Package and Deployment refuses to add a particular artifact or dependency type.',
+    solution: '<p>Some artifact types need special handling and others aren\'t supported at all — check the Supported Artifacts and Unsupported Artifacts sections of the Package and Deployment Overview for the current list.</p>'
+  },
+  {
+    cat: 'deploy',
+    title: 'Workflows with SmartAction-enabled client events won\'t deploy',
+    symptom: 'A workflow packaged with SmartActions can\'t be deployed to a target where SmartActions are disabled.',
+    solution: '<p>Enable SmartActions on the target before deploying:</p><ol><li>Open Start → All Programs → K2 → K2 Setup Manager.</li><li>On the K2 Maintenance page, choose Configure K2 and click Next.</li><li>In K2 Setup Manager, go to the SmartActions Configuration page.</li><li>Check "Enable SmartActions for Exchange".</li><li>Click Next through Configuration Analysis until every component shows a green check.</li><li>Click Next, then Finish.</li></ol><p>SmartActions is now available on the target, and the package can be deployed.</p>'
+  },
+  {
+    cat: 'ui',
+    title: 'Button text overflows its border',
+    symptom: 'Text on the Package and Deploy buttons spills outside the button edges.',
+    solution: '<p>This happens when the Windows font size setting is above 100%, which enlarges the button text without resizing the button.</p><p>Set the Windows font size back to 100%.</p>'
+  },
+  {
+    cat: 'sp',
+    title: 'Can\'t map to a deleted SharePoint site or site collection',
+    symptom: 'A list or library can\'t be selected when mapping SharePoint items — the target shows "Action required" and picking it opens an empty dialog.',
+    solution: '<p>When a SharePoint site collection or subsite tied to K2 is deleted, its service instance record stays in the K2 database and still appears as a deployment target. Package and Deployment tries to fetch its lists and libraries from SharePoint, finds nothing, and the dialog comes back empty.</p><p>Don\'t target a deleted site collection. Cancel the current deployment session, start a new one, and choose a service instance with an available site collection. For a deleted subsite, cancel the List or Library dialog and remap to a valid, existing subsite instead.</p>'
+  }
+];
+
+const list = document.getElementById('list');
+const chipsEl = document.getElementById('chips');
+const searchInput = document.getElementById('searchInput');
+const emptyState = document.getElementById('emptyState');
+
+let activeCat = null;
+
+function buildChips(){
+  Object.entries(CATS).forEach(([key, c]) => {
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.dataset.cat = key;
+    chip.style.setProperty('--tag-color', c.color);
+    chip.innerHTML = `<span class="dot" style="color:${c.color}"></span>${c.label}`;
+    chip.addEventListener('click', () => {
+      activeCat = activeCat === key ? null : key;
+      updateChipStates();
+      render();
+    });
+    chipsEl.appendChild(chip);
+  });
+}
+
+function updateChipStates(){
+  [...chipsEl.children].forEach(chip => {
+    const key = chip.dataset.cat;
+    const isActive = key === activeCat;
+    chip.classList.toggle('active', isActive);
+    chip.style.background = isActive ? CATS[key].color : 'transparent';
+  });
+}
+
+function matchesSearch(issue, q){
+  if(!q) return true;
+  const hay = (issue.title + ' ' + issue.symptom + ' ' + issue.solution + ' ' + CATS[issue.cat].label).toLowerCase();
+  return hay.includes(q);
+}
+
+function render(){
+  const q = searchInput.value.trim().toLowerCase();
+  list.innerHTML = '';
+  let shown = 0;
+
+  ISSUES.forEach((issue, i) => {
+    if(activeCat && issue.cat !== activeCat) return;
+    if(!matchesSearch(issue, q)) return;
+    shown++;
+
+    const cat = CATS[issue.cat];
+    const el = document.createElement('div');
+    el.className = 'issue';
+
+    el.innerHTML = `
+      <button class="issue-head" aria-expanded="false">
+        <span class="issue-num">${String(i+1).padStart(2,'0')}</span>
+        <span class="issue-main">
+          <span class="issue-tag" style="color:${cat.color}"><span class="dot" style="background:${cat.color}"></span>${cat.label}</span>
+          <p class="issue-title">${issue.title}</p>
+        </span>
+        <svg class="issue-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+      <div class="issue-body">
+        <div class="issue-body-inner">
+          <div class="issue-content">
+            <div class="block symptom" style="--tag-color:${cat.color}">
+              <p class="block-label">Symptom</p>
+              <p>${issue.symptom}</p>
+            </div>
+            <div class="block solution">
+              <p class="block-label">Fix</p>
+              ${issue.solution}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const head = el.querySelector('.issue-head');
+    head.addEventListener('click', () => {
+      const isOpen = el.classList.toggle('open');
+      head.setAttribute('aria-expanded', String(isOpen));
+    });
+
+    list.appendChild(el);
+  });
+
+  emptyState.classList.toggle('show', shown === 0);
+}
+
+searchInput.addEventListener('input', render);
+
+buildChips();
+render();
+</script>
+</body>
+</html>
