@@ -173,6 +173,113 @@
   }
   .empty.show{ display:block; }
 
+  .manage-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+    margin: 22px 0 4px;
+  }
+  .manage-actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .btn{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.01em;
+    padding: 8px 13px;
+    border-radius: 7px;
+    border:1px solid var(--line);
+    background: transparent;
+    color: var(--paper-dim);
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+  }
+  .btn:hover{ border-color: rgba(233,230,222,0.32); color: var(--paper); }
+  .btn.primary{
+    color: var(--ink);
+    background: var(--paper);
+    border-color: var(--paper);
+  }
+  .btn.primary:hover{ opacity:0.88; }
+  .reset-link{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    color: var(--paper-dim-2);
+    background:none;
+    border:none;
+    text-decoration: underline;
+    text-underline-offset:3px;
+    cursor:pointer;
+    padding:8px 2px;
+  }
+  .reset-link:hover{ color: var(--paper); }
+
+  input[type="file"]{ display:none; }
+
+  .form-panel{
+    display:none;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 16px 0 4px;
+    background: var(--ink-2);
+    flex-direction:column;
+    gap:14px;
+  }
+  .form-panel.show{ display:flex; }
+  .form-panel label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color: var(--paper-dim-2);
+    display:block;
+    margin-bottom:6px;
+  }
+  .form-panel input[type="text"],
+  .form-panel select,
+  .form-panel textarea{
+    width:100%;
+    background: var(--ink-3);
+    border:1px solid var(--line);
+    border-radius: 7px;
+    color: var(--paper);
+    font-family:'Inter', sans-serif;
+    font-size:14px;
+    padding: 10px 12px;
+    outline:none;
+    resize: vertical;
+  }
+  .form-panel textarea{ min-height:64px; line-height:1.55; }
+  .form-panel select{ appearance:none; }
+  .form-panel .form-actions{
+    display:flex;
+    gap:8px;
+    justify-content:flex-end;
+  }
+  .form-hint{
+    font-size:12px;
+    color: var(--paper-dim-2);
+    margin: -6px 0 0;
+  }
+
+  .issue-delete{
+    flex-shrink:0;
+    background:none;
+    border:none;
+    color: var(--paper-dim-2);
+    cursor:pointer;
+    padding: 4px;
+    margin-top: 2px;
+    border-radius:5px;
+    display:flex;
+  }
+  .issue-delete:hover{ color: #e2857b; background: rgba(226,133,123,0.1); }
+
   .list{
     display:flex;
     flex-direction:column;
@@ -307,8 +414,8 @@
     <h1>When a deployment doesn't behave</h1>
     <p class="lede">Thirteen recurring issues from packaging and deploying K2 solutions across environments, with the symptom, the cause, and the fix for each. Search by keyword or filter by category.</p>
     <div class="stat-row">
-      <div class="stat"><b>13</b><span>issues logged</span></div>
-      <div class="stat"><b>8</b><span>categories</span></div>
+      <div class="stat"><b id="statCount">13</b><span>issues logged</span></div>
+      <div class="stat"><b id="statCats">8</b><span>categories</span></div>
       <div class="stat"><b>1</b><span>source: K2 troubleshooting docs</span></div>
     </div>
   </header>
@@ -319,6 +426,49 @@
       <input id="searchInput" type="text" placeholder="Search issues, e.g. &quot;SmartObject&quot; or &quot;permissions&quot;">
     </div>
     <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="manage-row">
+    <button class="reset-link" id="resetBtn">Reset to defaults</button>
+    <div class="manage-actions">
+      <button class="btn" id="importBtn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Import
+      </button>
+      <input type="file" id="importFile" accept="application/json">
+      <button class="btn" id="exportBtn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Backup
+      </button>
+      <button class="btn primary" id="addBtn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add issue
+      </button>
+    </div>
+  </div>
+
+  <div class="form-panel" id="formPanel">
+    <div>
+      <label for="f-title">Title</label>
+      <input type="text" id="f-title" placeholder="Short name for the issue">
+    </div>
+    <div>
+      <label for="f-cat">Category</label>
+      <select id="f-cat"></select>
+    </div>
+    <div>
+      <label for="f-symptom">Symptom</label>
+      <textarea id="f-symptom" placeholder="What you see when it happens"></textarea>
+    </div>
+    <div>
+      <label for="f-fix">Fix</label>
+      <textarea id="f-fix" placeholder="How to resolve it"></textarea>
+      <p class="form-hint">Blank line = new paragraph. Lines starting with "- " become a list.</p>
+    </div>
+    <div class="form-actions">
+      <button class="btn" id="cancelFormBtn">Cancel</button>
+      <button class="btn primary" id="saveFormBtn">Save issue</button>
+    </div>
   </div>
 
   <p class="empty" id="emptyState">No issues match that search.</p>
@@ -340,80 +490,93 @@ const CATS = {
   sp:       { label: 'SharePoint',   color: 'var(--c-sp)'      }
 };
 
-const ISSUES = [
+const DEFAULT_ISSUES = [
   {
+    id: 'd1',
     cat: 'install',
     title: 'Package and Deployment fails to install',
     symptom: 'Setup encounters an error, or the install never completes, because a required piece of software is missing.',
     solution: '<p>Package and Deployment depends on Microsoft Management Console (MMC) 3.0. Install it before retrying setup.</p>'
   },
   {
+    id: 'd2',
     cat: 'perf',
     title: 'Packaging or deployment runs slowly',
     symptom: 'Packages with 800 or more artifacts take noticeably longer to build and deploy, and use more memory while doing it.',
     solution: '<p>Large solutions need more hardware headroom to process. Three ways to bring the time back down:</p><ol><li>Trim the package — drop unneeded SmartObject data and split one large solution into several smaller packages.</li><li>Deploy packages one at a time instead of all at once.</li><li>Add CPU and RAM to the source and target environments.</li></ol>'
   },
   {
+    id: 'd3',
     cat: 'smart',
     title: 'SmartObject data is missing after deployment',
     symptom: 'A package containing SmartObjects deploys, but the underlying data doesn\'t come with it.',
     solution: '<p>SmartObject data isn\'t packaged by default. On each SmartBox SmartObject, open the Data tab and check the box to include its data — then, at deployment time, make sure the SmartObject Data item is checked too. Only SmartBox SmartObject data can be packaged this way; data in other, non-SmartBox SmartObjects can\'t.</p>'
   },
   {
+    id: 'd4',
     cat: 'smart',
     title: 'Some or all SmartObjects are missing from a package',
     symptom: 'Deploying through the Package and Deployment console or the PowerShell snap-in throws an exception that the destination table can\'t be reached.',
     solution: '<p>SmartObject system names can\'t contain spaces — the service uses underscores internally even when the display name has spaces. Renaming a system name to include spaces breaks deployment for that object.</p><p>Stick to underscores when renaming a SmartObject\'s system name.</p>'
   },
   {
+    id: 'd5',
     cat: 'package',
     title: 'A package doesn\'t behave as expected',
     symptom: 'The deployed package doesn\'t respond the way it should, usually pointing to a dependency that was left out.',
     solution: '<p>A few habits prevent this:</p><ol><li>Leave "Automatically include dependent items" checked when building a package — unchecking it means selecting every dependent node yourself.</li><li>For service instance artifacts, make sure the entities they depend on already exist on the target before deploying.</li><li>"Continue deploying packaged items if one or more items cannot be deployed" is on by default — turn it off if a single failure should stop the whole deployment so you can resolve it first.</li><li>If a conflict can\'t be resolved before deploying, uncheck that item, deploy the rest, and come back to deploy it separately before the solution goes live.</li></ol>'
   },
   {
+    id: 'd6',
     cat: 'deploy',
     title: 'Deployment fails after manually recreating artifacts mid-deployment',
     symptom: 'Creating dependent artifacts on the target by hand during a deployment — especially reference-only items like SharePoint elements — causes the deployment to fail.',
     solution: '<p>This typically happens after using Delete All to clear a partial deployment (say, only the SmartObjects of a SharePoint list exist, not the forms or views) and then trying to continue.</p><p>Avoid Delete All mid-deployment. Use the New menu to create only what\'s missing. If Delete All was already used, restart the deployment from scratch so mapping can be re-analyzed cleanly.</p>'
   },
   {
+    id: 'd7',
     cat: 'deploy',
     title: 'Oracle, SQL Server, CRM, or SharePoint service instances won\'t deploy',
     symptom: 'These service instance types fail to deploy to the target environment.',
     solution: '<p>Before deploying, confirm the matching databases, entities, lists, or libraries already exist on the target with the same schema as the source. For a SalesForce service instance specifically, an existing SalesForce service instance must already be on the target — rebind the packaged instance to it once deployed.</p>'
   },
   {
+    id: 'd8',
     cat: 'perm',
     title: 'Deployment permissions denied',
     symptom: 'Certain artifacts or dependencies can\'t be deployed due to a lack of permissions.',
     solution: '<p>Every call to the deployment server is validated, and SmartObject security requires \'Publish SmartObject\' rights on top of that.</p><p>You\'ll need K2 deployment (export) rights and membership in the Package and Deployment role. Note that this role grants global view rights but doesn\'t override any Deny rights already set on your identity.</p>'
   },
   {
+    id: 'd9',
     cat: 'perm',
     title: '"Insufficient rights detected. Unable to continue"',
     symptom: 'This message appears when creating, editing, or deploying a package.',
     solution: '<p>Creating or editing a package requires View rights across the entire category system — losing rights to even one artifact elsewhere blocks the whole operation. Deploying requires View rights to everything on the target, since Package and Deployment needs to tell whether an item already exists (update) or doesn\'t (create).</p><p>Grant View rights everywhere in the category system. The Package and Deployment role gives global view rights, but any Deny rights already in place still take precedence.</p>'
   },
   {
+    id: 'd10',
     cat: 'package',
     title: 'An artifact type can\'t be included in a package',
     symptom: 'Package and Deployment refuses to add a particular artifact or dependency type.',
     solution: '<p>Some artifact types need special handling and others aren\'t supported at all — check the Supported Artifacts and Unsupported Artifacts sections of the Package and Deployment Overview for the current list.</p>'
   },
   {
+    id: 'd11',
     cat: 'deploy',
     title: 'Workflows with SmartAction-enabled client events won\'t deploy',
     symptom: 'A workflow packaged with SmartActions can\'t be deployed to a target where SmartActions are disabled.',
     solution: '<p>Enable SmartActions on the target before deploying:</p><ol><li>Open Start → All Programs → K2 → K2 Setup Manager.</li><li>On the K2 Maintenance page, choose Configure K2 and click Next.</li><li>In K2 Setup Manager, go to the SmartActions Configuration page.</li><li>Check "Enable SmartActions for Exchange".</li><li>Click Next through Configuration Analysis until every component shows a green check.</li><li>Click Next, then Finish.</li></ol><p>SmartActions is now available on the target, and the package can be deployed.</p>'
   },
   {
+    id: 'd12',
     cat: 'ui',
     title: 'Button text overflows its border',
     symptom: 'Text on the Package and Deploy buttons spills outside the button edges.',
     solution: '<p>This happens when the Windows font size setting is above 100%, which enlarges the button text without resizing the button.</p><p>Set the Windows font size back to 100%.</p>'
   },
   {
+    id: 'd13',
     cat: 'sp',
     title: 'Can\'t map to a deleted SharePoint site or site collection',
     symptom: 'A list or library can\'t be selected when mapping SharePoint items — the target shows "Action required" and picking it opens an empty dialog.',
@@ -421,12 +584,56 @@ const ISSUES = [
   }
 ];
 
+const STORAGE_KEY = 'k2-troubleshooting-issues';
+
 const list = document.getElementById('list');
 const chipsEl = document.getElementById('chips');
 const searchInput = document.getElementById('searchInput');
 const emptyState = document.getElementById('emptyState');
+const statCount = document.getElementById('statCount');
+const statCats = document.getElementById('statCats');
+
+const formPanel = document.getElementById('formPanel');
+const fTitle = document.getElementById('f-title');
+const fCat = document.getElementById('f-cat');
+const fSymptom = document.getElementById('f-symptom');
+const fFix = document.getElementById('f-fix');
 
 let activeCat = null;
+let issues = loadIssues();
+
+function loadIssues(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(Array.isArray(parsed) && parsed.length) return parsed;
+    }
+  }catch(e){}
+  return DEFAULT_ISSUES.map(x => ({...x}));
+}
+
+function saveIssues(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(issues)); }catch(e){}
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function formatText(text){
+  const blocks = text.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+  return blocks.map(block => {
+    const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+    const isList = lines.length && lines.every(l => l.startsWith('- '));
+    if(isList){
+      return '<ul>' + lines.map(l => `<li>${escapeHtml(l.slice(2))}</li>`).join('') + '</ul>';
+    }
+    return `<p>${escapeHtml(lines.join(' '))}</p>`;
+  }).join('');
+}
 
 function buildChips(){
   Object.entries(CATS).forEach(([key, c]) => {
@@ -441,6 +648,11 @@ function buildChips(){
       render();
     });
     chipsEl.appendChild(chip);
+
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = c.label;
+    fCat.appendChild(opt);
   });
 }
 
@@ -455,21 +667,29 @@ function updateChipStates(){
 
 function matchesSearch(issue, q){
   if(!q) return true;
-  const hay = (issue.title + ' ' + issue.symptom + ' ' + issue.solution + ' ' + CATS[issue.cat].label).toLowerCase();
+  const solutionText = typeof issue.solution === 'string' ? issue.solution : '';
+  const hay = (issue.title + ' ' + issue.symptom + ' ' + solutionText + ' ' + CATS[issue.cat].label).toLowerCase();
   return hay.includes(q);
+}
+
+function updateStats(){
+  statCount.textContent = issues.length;
+  statCats.textContent = new Set(issues.map(i => i.cat)).size;
 }
 
 function render(){
   const q = searchInput.value.trim().toLowerCase();
   list.innerHTML = '';
   let shown = 0;
+  updateStats();
 
-  ISSUES.forEach((issue, i) => {
+  issues.forEach((issue, i) => {
     if(activeCat && issue.cat !== activeCat) return;
     if(!matchesSearch(issue, q)) return;
     shown++;
 
-    const cat = CATS[issue.cat];
+    const cat = CATS[issue.cat] || CATS.package;
+    const solutionHtml = issue.custom ? formatText(issue.solution) : issue.solution;
     const el = document.createElement('div');
     el.className = 'issue';
 
@@ -478,8 +698,11 @@ function render(){
         <span class="issue-num">${String(i+1).padStart(2,'0')}</span>
         <span class="issue-main">
           <span class="issue-tag" style="color:${cat.color}"><span class="dot" style="background:${cat.color}"></span>${cat.label}</span>
-          <p class="issue-title">${issue.title}</p>
+          <p class="issue-title">${escapeHtml(issue.title)}</p>
         </span>
+        <button class="issue-delete" aria-label="Remove issue" title="Remove issue">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
         <svg class="issue-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       </button>
       <div class="issue-body">
@@ -487,11 +710,11 @@ function render(){
           <div class="issue-content">
             <div class="block symptom" style="--tag-color:${cat.color}">
               <p class="block-label">Symptom</p>
-              <p>${issue.symptom}</p>
+              <p>${escapeHtml(issue.symptom)}</p>
             </div>
             <div class="block solution">
               <p class="block-label">Fix</p>
-              ${issue.solution}
+              ${solutionHtml}
             </div>
           </div>
         </div>
@@ -499,9 +722,17 @@ function render(){
     `;
 
     const head = el.querySelector('.issue-head');
-    head.addEventListener('click', () => {
+    head.addEventListener('click', (e) => {
+      if(e.target.closest('.issue-delete')) return;
       const isOpen = el.classList.toggle('open');
       head.setAttribute('aria-expanded', String(isOpen));
+    });
+
+    el.querySelector('.issue-delete').addEventListener('click', (e) => {
+      e.stopPropagation();
+      issues = issues.filter(x => x.id !== issue.id);
+      saveIssues();
+      render();
     });
 
     list.appendChild(el);
@@ -509,6 +740,83 @@ function render(){
 
   emptyState.classList.toggle('show', shown === 0);
 }
+
+function openForm(){
+  fTitle.value = '';
+  fCat.value = 'package';
+  fSymptom.value = '';
+  fFix.value = '';
+  formPanel.classList.add('show');
+  fTitle.focus();
+}
+
+function closeForm(){
+  formPanel.classList.remove('show');
+}
+
+document.getElementById('addBtn').addEventListener('click', openForm);
+document.getElementById('cancelFormBtn').addEventListener('click', closeForm);
+
+document.getElementById('saveFormBtn').addEventListener('click', () => {
+  const title = fTitle.value.trim();
+  const symptom = fSymptom.value.trim();
+  const fix = fFix.value.trim();
+  if(!title || !symptom || !fix){
+    alert('Fill in a title, symptom, and fix before saving.');
+    return;
+  }
+  issues.push({
+    id: 'c' + Date.now(),
+    cat: fCat.value,
+    title,
+    symptom,
+    solution: fix,
+    custom: true
+  });
+  saveIssues();
+  closeForm();
+  render();
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if(!confirm('Reset to the original 13 issues? This clears anything you added, edited, or removed.')) return;
+  issues = DEFAULT_ISSUES.map(x => ({...x}));
+  saveIssues();
+  render();
+});
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(issues, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'k2-troubleshooting-backup.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('importBtn').addEventListener('click', () => {
+  document.getElementById('importFile').click();
+});
+
+document.getElementById('importFile').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const parsed = JSON.parse(reader.result);
+      if(!Array.isArray(parsed)) throw new Error('not an array');
+      issues = parsed;
+      saveIssues();
+      render();
+    }catch(err){
+      alert('That file doesn\'t look like a valid backup.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
 
 searchInput.addEventListener('input', render);
 
